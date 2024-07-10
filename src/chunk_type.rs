@@ -81,6 +81,7 @@ mod tests {
         assert!(!chunk.is_valid());
 
         let chunk = ChunkType::from_str("Ru1t");
+        println!("{:?}", chunk);
         assert!(chunk.is_err());
     }
 
@@ -113,7 +114,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
 
     fn try_from(value: [u8; 4]) -> Result<Self> {
         for x in value {
-            if !x.is_ascii() {
+            if !x.is_ascii_alphabetic() {
                 return Err(Error::from(
                     "Invalid byte; Valid bytes are represented by characters A-Z or a-z",
                 ));
@@ -127,17 +128,21 @@ impl FromStr for ChunkType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-       let result: [u8; 4] = s.as_bytes().try_into().map_err(|_| {
-            Error::from("Failed to convert string slice to [u8; 4]")
-       })?;
+        let result: [u8; 4] = s
+            .as_bytes()
+            .try_into()
+            .map_err(|_| Error::from("Failed to convert string slice to [u8; 4]"))?;
 
-       ChunkType::try_from(result)
+        ChunkType::try_from(result)
     }
 }
 
 impl Display for ChunkType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        let chunk_as_string: String = self.bytes.iter()
+            .map(|x| *x as char)
+            .collect();
+        write!(f, "{}", chunk_as_string)
     }
 }
 
@@ -146,18 +151,18 @@ impl ChunkType {
         self.bytes
     }
     pub fn is_valid(&self) -> bool {
-        todo!()
+        self.is_reserved_bit_valid() && self.bytes.into_iter().all(|c| c.is_ascii())
     }
     pub fn is_critical(&self) -> bool {
-        todo!()
+        self.bytes[0].is_ascii_uppercase()
     }
     pub fn is_public(&self) -> bool {
-        todo!()
+        self.bytes[1].is_ascii_uppercase()
     }
     pub fn is_reserved_bit_valid(&self) -> bool {
-        todo!()
+        self.bytes[2].is_ascii_uppercase()
     }
     pub fn is_safe_to_copy(&self) -> bool {
-        todo!()
+        self.bytes[3].is_ascii_lowercase()
     }
 }
