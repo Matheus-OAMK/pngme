@@ -133,6 +133,8 @@ mod tests {
     }
 }
 
+const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
+
 pub struct Chunk {
     length: u32,
     chunk_type: ChunkType,
@@ -176,7 +178,19 @@ impl TryFrom<&[u8]> for Chunk {
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        let crc = u32::from_be_bytes(crc_bytes);
+        let crc_from_data = u32::from_be_bytes(crc_bytes);
+
+        // Calculate Crc
+        let mut crc_data = chunk_type.bytes().to_vec();
+        crc_data.extend(&chunk_data);
+
+        let crc = CRC32.checksum(&crc_data);
+
+        if crc != crc_from_data {
+            return Err(Error::from("Invalid Crc"));
+        }
+
+
 
         Ok(Chunk {
             length,
@@ -203,11 +217,14 @@ impl Chunk {
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let length = data.len() as u32;
 
-        let crc32 = Crc::<u32>::new(&CRC_32_ISO_HDLC);
-        let mut digest = crc32.digest();
-        digest.update(&chunk_type.bytes);
-        digest.update(&data);
-        let crc = digest.finalize();
+        let crc_data = chunk_type
+            .bytes()
+            .iter()
+            .cloned()
+            .chain(data.clone())
+            .collect::<Vec<u8>>();
+
+        let crc = CRC32.checksum(&crc_data);
 
         Chunk {
             length,
