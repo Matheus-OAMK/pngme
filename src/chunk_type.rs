@@ -105,8 +105,8 @@ use std::{fmt::Display, str::FromStr};
 use crate::{Error, Result};
 
 #[derive(PartialEq, Eq, Debug)]
-struct ChunkType {
-    bytes: [u8; 4],
+pub struct ChunkType {
+    pub bytes: [u8; 4],
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
